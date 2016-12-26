@@ -1,0 +1,297 @@
+FRMP_UMOD_I000_HEADER:	dc.w	EQU_NATIVE	; Native
+	dc.w	4+4	; Params Queue Size
+	dc.l	FRMP_UMOD_I000_LOAD	; Routine Loader
+	dc.l	FRMP_UMOD_I000_START	; Routine Addr
+	dc.l	FRMP_UMOD_I000_NAME	; Routine Name
+	dc.l	FRMP_UMOD_I000_INFOS	; Routine Infos
+
+FRMP_UMOD_I000_LOAD:	move.l	([A6]),A0	; SOURCE ADDR
+	move.l	([4,A6]),A1	; DEST ADDR
+	
+	RTS
+
+FRMP_UMOD_I000_START:	move.w	#120-2,D6	; -1
+
+FRMP_UMOD_I000_SYL:	swap	D6
+	move.w	#176-2,D6	; -1
+	
+FRMP_UMOD_I000_SXL:	move.w	(A0),D2	; BlueA
+	move.w	D2,D1	; GreenA
+	move.w	D2,D0	; RedA
+	andi.w	#%11111,D2
+	andi.w	#%11111100000,D1
+	ror.w	#5,D1
+	andi.w	#%1111100000000000,D0
+	rol.w	#5,D0
+			; D0 = R1  ''      r
+			; D1 = R2  ''      g
+			; D2 = R3''''      b
+			; D3 = G1  '' B1  ''
+			; D4 = G2  '' B2  ''
+			; D5 = G3'''' B3''''
+
+			; Blue
+	move.w	D2,D5	; D5 = G3'''' B3'''"
+	move.w	D2,D4	; D4 = G2  '' B2  '"
+	move.w	D2,D3	; D3 = G1  '' B1  '"
+	swap	D5	; D5 = B3'''" G3''''
+	swap	D4	; D4 = B2  '" G2  ''
+	swap	D3	; D3 = B1  '" G1  ''
+	
+			; Green
+	move.w	D1,D5	; D5 = B3'''" G3'''"
+	move.w	D1,D4	; D4 = B2  '" G2  '"
+	move.w	D1,D3	; D3 = B1  '" G1  '"
+	swap	D5	; D5 = G3'''" B3'''"
+	swap	D4	; D4 = G2  '" B2  '"
+	swap	D3	; D3 = G1  '" B1  '"
+	
+			; Red
+	swap	D1	; D1 =      g R2  ''
+	swap	D2	; D2 =      b R3''''
+	move.w	D0,D1	; D1 =      g R2  '"
+	move.w	D0,D2	; D2 =      b R3'''"
+	swap	D0	; D0 =      r R1  ''
+	move.w	D1,D0	; D0 =      r R1  '"
+	swap	D0	; D0 = R1  '"      r
+	swap	D1	; D1 = R2  '"      g
+	swap	D2	; D2 = R3'''"      b
+	
+	move.w	(2,A0),D2	; BlueB
+	move.w	D2,D1	; GreenB
+	move.w	D2,D0	; RedB
+	andi.w	#%11111,D2
+	andi.w	#%11111100000,D1
+	ror.w	#5,D1
+	andi.w	#%1111100000000000,D0
+	rol.w	#5,D0
+
+			; D0 = R1  '"      r
+			; D1 = R2  '"      g
+			; D2 = R3'''"      b
+			; D3 = G1  '" B1  '"
+			; D4 = G2  '" B2  '"
+			; D5 = G3'''" B3'''"
+	
+			; Blue
+	add.w	D2,D5	; D5 = G3'''" B3''""
+	add.w	D2,D3	; D3 = G1  '" B1  ""
+	swap	D5	; D5 = B3''"" G3'''"
+	swap	D3	; D3 = B1  "" G1  '"
+	
+			; Green
+	add.w	D1,D5	; D5 = B3''"" G3''""
+	add.w	D1,D3	; D3 = B1  "" G1  ""
+	swap	D5	; D5 = G3''"" B3''""
+	
+			; Red
+	move.w	D0,D1	; D1 = R2  '"      r
+	swap	D2	; D2 =      b R3'''"
+	add.w	D1,D2	; D2 =      b R3''""
+	swap	D2	; D2 = R3''""      b
+	swap	D0	; D0 =      r R1  '"
+	add.w	D1,D0	; D0 =      r R1  ""
+	
+	clr.w	D1	; D1 = R2  '"    ...
+	lsr.w	#1,D0	; D0 =      r      R
+	or.w	D0,D1	; D1 = R2  '"    ..R
+	swap	D0	; D0 =      R      r
+	lsl.w	#6,D1	; D1 = R2  '"    .R.
+	lsr.w	#1,D3	; D3 = B1  ""      G
+	or.w	D3,D1	; D1 = R2  '"    .RG
+	lsl.w	#5,D1	; D1 = R2  '"    RG.
+	swap	D3	; D3 =      G B1  ""
+	lsr.w	#1,D3	; D3 =      G      B
+	or.w	D3,D1	; D1 = R2  '"    RGB
+	
+	move.w	(A0),(A1)	; A
+	move.w	D1,(2,A1)	; 1
+	
+	move.w	(352,A0),D2	; BlueC
+	move.w	D2,D1	; GreenC
+	move.w	D2,D0	; RedC
+	andi.w	#%11111,D2
+	andi.w	#%11111100000,D1
+	ror.w	#5,D1
+	andi.w	#%1111100000000000,D0
+	rol.w	#5,D0
+
+			; D0 =      .      r
+			; D1 = R2  '"      g
+			; D2 = R3''""      b
+			; D3 =      .      .
+			; D4 = G2  '" B2  '"
+			; D5 = G3''"" B3''""
+	
+			; Blue
+	add.w	D2,D5	; D5 = G3''"" B3'"""
+	add.w	D2,D4	; D4 = G2  '" B2  ""
+	swap	D5	; D5 = B3'""" G3''""
+	swap	D4	; D4 = B2  "" G2  '"
+	
+			; Green
+	add.w	D1,D5	; D5 = B3'""" G3'"""
+	add.w	D1,D4	; D4 = B2  "" G2  ""
+	swap	D5	; D5 = G3'""" B3'"""
+	
+			; Red
+	swap	D2	; D2 =      b R3''""
+	add.w	D0,D2	; D2 =      b R3'"""
+	swap	D2	; D2 = R3'"""      b
+	swap	D1	; D1 =      g R2  '"
+	add.w	D0,D1	; D1 =      g R2  ""
+	
+	clr.w	D0	; D0 =      .    ...
+	lsr.w	#1,D1	; D1 =      g    ..R
+	or.w	D1,D0	; D0 =      .    ..R
+	lsl.w	#6,D0	; D0 =      .    .R.
+	lsr.w	#1,D4	; D4 = B2  ""      G
+	or.w	D4,D0	; D0 =      .    .RG
+	lsl.w	#5,D0	; D0 =      .    RG.
+	swap	D4	; D4 =      G B2  ""
+	lsr.w	#1,D4	; D4 =      G      B
+	or.w	D4,D0	; D0 =      .    RGB
+	
+	move.w	D0,(704,A1)	; 2
+
+	move.w	(354,A0),D2	; BlueD
+	move.w	D2,D1	; GreenD
+	move.w	D2,D0	; RedD
+	andi.w	#%11111,D2
+	andi.w	#%11111100000,D1
+	ror.w	#5,D1
+	andi.w	#%1111100000000000,D0
+	rol.w	#5,D0
+
+			; D0 =      .      r
+			; D1 =      .      g
+			; D2 = R3'"""      b
+			; D3 =      .      .
+			; D4 =      .      .
+			; D5 = G3'""" B3'"""
+	
+			; Blue
+	add.w	D2,D5	; D5 = G3'""" B3""""
+	swap	D5	; D5 = B3"""" G3'"""
+	
+			; Green
+	add.w	D1,D5	; D5 = B3"""" G3""""
+	
+			; Red
+	swap	D2	; D2 =      b R3'"""
+	add.w	D0,D2	; D2 =      b R3""""
+	
+	clr.w	D0	; D0 =      .    ...
+	lsr.w	#2,D2	; D2 =      b    ..R
+	or.w	D2,D0	; D0 =      .    ..R
+	lsl.w	#6,D0	; D0 =      .    .R.
+	lsr.w	#2,D5	; D5 = B3""""      G
+	or.w	D5,D0	; D0 =      .    .RG
+	lsl.w	#5,D0	; D0 =      .    RG.
+	swap	D5	; D5 =      G B3""""
+	lsr.w	#2,D5	; D5 =      G      B
+	or.w	D5,D0	; D0 =      .    RGB
+	
+	move.w	D0,(706,A1)	; 3
+
+	addq.l	#2,A0
+	addq.l	#4,A1
+
+	DBF	D6,FRMP_UMOD_I000_SXL
+	
+	move.w	(A0),D2	; BlueA
+	move.w	D2,D1	; GreenA
+	move.w	D2,D0	; RedA
+	andi.w	#%11111,D2
+	andi.w	#%11111100000,D1
+	ror.w	#5,D1
+	andi.w	#%1111100000000000,D0
+	rol.w	#5,D0
+
+	move.w	(352,A0),D5	; BlueC
+	move.w	D5,D4	; GreenC
+	move.w	D5,D3	; RedC
+	andi.w	#%11111,D5
+	andi.w	#%11111100000,D4
+	ror.w	#5,D4
+	andi.w	#%1111100000000000,D3
+	rol.w	#5,D3
+
+	add.w	D3,D0
+	add.w	D4,D1
+	add.w	D5,D2
+	
+	lsr.w	#1,D0
+	lsr.w	#1,D1
+	lsr.w	#1,D2
+	
+	lsl.w	#6,D0
+	or.w	D1,D0
+	lsl.w	#5,D0
+	or.w	D2,D0
+	
+	move.w	(A0)+,(A1)
+	clr.w	(2,A1)
+	move.w	D0,(704,A1)
+	clr.w	(706,A1)
+	
+	adda.l	#708,A1
+	
+	swap	D6
+	DBF	D6,FRMP_UMOD_I000_SYL
+	
+	move.w	#176-2,D6	; -1
+	
+FRMP_UMOD_I000_SLL:	move.w	(A0),D2	; BlueA
+	move.w	D2,D1	; GreenA
+	move.w	D2,D0	; RedA
+	andi.w	#%11111,D2
+	andi.w	#%11111100000,D1
+	ror.w	#5,D1
+	andi.w	#%1111100000000000,D0
+	rol.w	#5,D0
+
+	move.w	(2,A0),D5	; BlueB
+	move.w	D5,D4	; GreenB
+	move.w	D5,D3	; RedB
+	andi.w	#%11111,D5
+	andi.w	#%11111100000,D4
+	ror.w	#5,D4
+	andi.w	#%1111100000000000,D3
+	rol.w	#5,D3
+
+	add.w	D3,D0
+	add.w	D4,D1
+	add.w	D5,D2
+	
+	lsr.w	#1,D0
+	lsr.w	#1,D1
+	lsr.w	#1,D2
+	
+	lsl.w	#6,D0
+	or.w	D1,D0
+	lsl.w	#5,D0
+	or.w	D2,D0
+	
+	move.w	(A0)+,(A1)
+	move.w	D0,(2,A1)
+	clr.w	(704,A1)
+	clr.w	(706,A1)
+
+	addq.l	#4,A1
+
+	DBF	D6,FRMP_UMOD_I000_SLL
+		
+	move.w	(A0),(A1)
+	clr.w	(2,A1)
+	clr.w	(704,A1)
+	clr.w	(706,A1)
+
+	RTS
+
+FRMP_UMOD_I000_NAME:	dc.b	" 68000 : 176*120 > 352*240 NTC INTERPOLATE ",0,0
+
+FRMP_UMOD_I000_INFOS:	dc.b	" MC68000 Version by KOSS (c) 1999 ",0
+	dc.b	" 16 bits Near True Color ",0
+	dc.b	" 176*120 -> 352*240 ",0
+	dc.b	" Linear Interpolation System ",0,0

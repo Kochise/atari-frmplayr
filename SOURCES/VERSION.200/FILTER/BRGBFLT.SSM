@@ -1,0 +1,9 @@
+; - Filtre RGB -
+
+BlackRGB_Filter	move.w	(A0)+,D0
+	and.w	D2,D0
+	move.w	D0,(A1)+
+	
+	DBF	D3,BlackRGB_Filter
+	
+	RTS

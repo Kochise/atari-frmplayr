@@ -1,0 +1,19 @@
+; /// ARRETE LA SOURIS ///
+
+Stop_Mouse	move.w	#18,-(SP)
+	move.w	#4,-(SP)
+	move.w	#3,-(SP)		; - BCONOUT -
+	trap	#13		; *** BIOS ***
+	addq.l	#6,SP
+	
+	RTS
+
+; /// LIBERE LA SOURIS ///
+
+Free_Mouse	move.w	#8,-(SP)
+	move.w	#4,-(SP)
+	move.w	#3,-(SP)		; - BCONOUT -
+	trap	#13		; *** BIOS ***
+	addq.l	#6,SP
+	
+	RTS

@@ -1,0 +1,236 @@
+; *****************************************************************************	
+
+; --- Routine Principale ---
+	
+	; Remise … Z‚ro
+	; Reset
+	
+ResetLoop	move.w	MovieLenght,D7
+	subq.w	#1,D7
+	
+	clr.w	-(SP)
+	move.w	MovieHandle,-(SP)
+	clr.l	-(SP)
+	move.w	#$42,-(SP)	; - F_SEEK -
+	trap	#1	; *** GEMDOS ***
+	lea	(10,SP),SP
+
+	; Chargement de l'Image
+	; Loading the Image
+
+ReadLoop	pea	ScreenBuffer
+	move.l	#42240,-(SP)
+	move.w	MovieHandle,-(SP)
+	move.w	#$3F,-(SP)	; - F_READ -
+	trap	#1	; *** GEMDOS ***
+	lea	(12,SP),SP
+	
+	; Application du Filtre
+	; Filtering
+	
+DisplayLoop	; DisplayFilter==0, pas de Filtre
+	;                   no Filter
+
+	move.w	DisplayFilter,D0
+	BNE	ViewFilter
+	
+	; On repique les Donn‚es directement depuis ScreenBuffer
+	; Using the datas from ScreenBuffer
+	
+	move.l	#ScreenBuffer,ScreenData
+			
+	BRA	ViewLoopNext
+	
+	; Faudra prendre les Donn‚es trait‚es dans ScreenFilter
+	; Using the datas from ScreenFilter
+	
+ViewFilter	move.l	#ScreenFilter,ScreenData
+
+	; On force le bon Filtre
+	; Force the right Filter
+
+	lea	FilterBank,A0
+	move.l	(A0,D0.w*4),A0
+	
+	; On s'en va appliquer le Filtre
+	; Going Filter
+	
+	JSR	(A0)
+	
+	; Affichage de l'Image. On force la Routine d'Affichage
+	; Displaying. Force the right Display Routine
+	
+ViewLoopNext	move.w	DisplayMachine,D0
+	move.w	DisplayVersion,D1
+	
+	mulu.w	#8,D0
+	mulu.w	#4,D1
+	add.w	D1,D0
+	
+	lea	DisplayBank,A0
+	
+	move.l	(A0,D0.w),DisplayRoutine
+
+	; On s'en va Afficher l'Image
+	; Going Display
+
+	JSR	([DisplayRoutine])
+	
+	; Swapping
+	; ...
+	
+	move.w	#$25,-(SP)	; - VSYNC -
+	trap	#1	; *** XBIOS ***
+	addq.l	#2,SP
+	
+	move.w	#-1,-(SP)
+	move.w	#-1,-(SP)
+	move.l	ScreenBank,-(SP)	; Logical  -> Physical
+	move.l	ScreenBank+4,-(SP)	; Physical -> Logical
+	move.w	#5,-(SP)	; - VSETSCREEN -
+	trap	#14	; *** XBIOS ***
+	lea	(14,SP),SP
+
+	; On ‚change les deux Ecrans
+	; Swap both Screens
+
+	move.l	ScreenBank,D0
+	move.l	ScreenBank+4,ScreenBank
+	move.l	D0,ScreenBank+4
+	
+	; Lecture du Clavier. Y'a t-il un caractŠre qui nous attend ?
+	; Read the KeyBoard. Is there a character waiting for us ?
+	
+ScanKeys	move.w	#2,-(SP)
+	move.w	#1,-(SP)	; - BCONSTAT -
+	trap	#13	; *** BIOS ***
+	addq.l	#4,SP
+	
+	tst.w	D0
+	BEQ	NextFrame
+	
+	; On vide le Buffer et on garde la derniŠre Entr‚e
+	; Clearing the Buffer and keeping the last Entry
+	
+ReadKeys	move.w	#2,-(SP)
+	move.w	#2,-(SP)	; - BCONIN -
+	trap	#13	; *** BIOS ***
+	addq.l	#4,SP
+
+	move.l	D0,D2
+	swap	D2
+	
+	move.w	#2,-(SP)
+	move.w	#1,-(SP)	; - BCONSTAT -
+	trap	#13	; *** BIOS ***
+	addq.l	#4,SP
+	
+	tst.w	D0
+	BNE	ReadKeys
+
+	; On s‚lectionne le Choix
+	; Setting the Choice
+
+	cmpi.b	#1,D2	; Escape
+	BEQ	ScreenExit
+	
+	cmpi.b	#$1F,D2	; S
+	BEQ	SaveTarga
+	
+	cmpi.b	#$3B,D2	; F1
+	BLT	LookKeysNext
+	
+	cmpi.b	#$44,D2	; F10
+	BLE	SetFilter
+	
+LookKeysNext	cmpi.b	#$39,D2	; Space
+	BEQ	Pause
+	
+	cmpi.b	#$47,D2	; ClrHome
+	BEQ	ResetLoop
+
+	cmpi.b	#$48,D2	; UpArrow
+	BEQ	TenBefore
+	
+	cmpi.b	#$4A,D2	; - (Num)
+	BEQ	Smaller
+	
+	cmpi.b	#$4B,D2	; <-
+	BEQ	Previous
+	
+	cmpi.b	#$4E,D2	; + (Num)
+	BEQ	Taller
+	
+	cmpi.b	#$4D,D2	; ->
+	BEQ	Next
+	
+	cmpi.b	#$50,D2	; DownArrow
+	BEQ	TenAfter
+	
+	cmpi.b	#$63,D2	; ( (Num)
+	BEQ	SoftVersion
+	
+	cmpi.b	#$64,D2	; ) (Num)
+	BEQ	HardVersion	
+	
+	; V‚rification de la Pause
+	; Checking Pause
+		
+NextFrame	tst.w	PauseFlag
+	BNE	ScanKeys
+
+	; Prochaine Image. Diminution du nombre d'Image restant
+	; Next Image. Decreasing Image-To-Read Counter
+
+Next	DBF	D7,ReadLoop
+			
+	; On r‚initialise l'Animation
+	; Reseting the Movie
+			
+	BRA	ResetLoop
+		
+; *****************************************************************************	
+
+; --- Sortie du Programme ---
+		
+	; Restauration de l'Ecran pour le GEM
+	; ATTENTION : Sous Ecran Virtuel, la position
+	;             du coin HG du Bureau sera celle du
+	;             coin HG de l'Ecran lors de l'execution
+	;             du Programme 
+	; Restoring of the Screen for GEM
+	; WARNING : Under Virtual Screen, the location
+	;           of the UL DeskTop corner will be those 
+	;           of the UL Screen during the Program start
+		
+ScreenExit	move.w	#-1,-(SP)
+	move.w	#-1,-(SP)
+	move.l	GEMPhysic,-(SP)
+	move.l	GEMLogic,-(SP)
+	move.w	#5,-(SP)	; - VSETSCREEN -
+	trap	#14	; *** XBIOS ***
+	lea	(14,SP),SP
+
+	; Fermeture de l'Animation
+	; Closing the Movie
+
+Exit	move.w	MovieHandle,-(SP)
+	move.w	#$3E,-(SP)	; - F_CLOSE -
+	trap	#1	; *** GEMDOS ***
+	addq.l	#4,SP
+
+	; Lib‚ration de la Souris
+	; Freeing the Mouse
+
+	move.w	#8,-(SP)
+	move.w	#4,-(SP)
+	move.w	#3,-(SP)	; - BCONOUT -
+	trap	#13	; *** BIOS ***
+	addq.l	#6,SP
+
+	; Kassoss...
+	; Let's warp...
+
+P_Term	move.w	D0,-(SP)
+	move.w	#$4C,-(SP)	; - P_TERM -
+	trap	#1	; *** GEMDOS ***

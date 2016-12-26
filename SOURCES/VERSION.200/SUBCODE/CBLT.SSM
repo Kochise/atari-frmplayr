@@ -1,0 +1,51 @@
+FRMP_UMOD_CBLT_HEADER:	dc.w	EQU_NATIVE	; Native
+	dc.w	4+2+2+2+4+2+2+2+2+2	; Params Queue Size
+	dc.l	FRMP_UMOD_CBLT_LOAD	; Routine Loader
+	dc.l	FRMP_UMOD_CBLT_START	; Routine Addr
+	dc.l	FRMP_UMOD_CBLT_NAME	; Routine Name
+	dc.l	FRMP_UMOD_CBLT_INFOS	; Routine Infos
+
+FRMP_UMOD_CBLT_LOAD:	move.l	([A6]),A0	; SOURCE ADDR
+	move.w	(4,A6),D0	; SOURCE START OFFSET
+	lea	(A0,D0.w),A0
+	move.w	(6,A6),D0	; SOURCE PIXEL OFFSET
+	move.w	(8,A6),D1	; SOURCE LINE OFFSET
+	move.l	([10,A6]),A1	; DEST ADDR
+	move.w	(14,A6),D2	; DEST START OFFSET
+	lea	(A1,D2.w),A1
+	move.w	(16,A6),D2	; DEST PIXEL OFFSET
+	move.w	(18,A6),D3	; DEST LINE OFFSET
+	move.w	(20,A6),D4	; BLOCK WIDTH
+	move.w	(22,A6),D5	; BLOCK HEIGHT
+	
+	RTS
+
+FRMP_UMOD_CBLT_START:	addq.w	#2,D0
+	move.w	D0,$FFFF8A20.w	; SXI
+	addq.w	#2+2,D1
+	move.w	D1,$FFFF8A22.w	; SYI (+2 because "No eXtra Source Read" /SKEW)
+	move.l	A0,$FFFF8A24.w	; SADDR
+	move.w	#-1,$FFFF8A28.w	; ENDM1
+	move.w	#-1,$FFFF8A2A.w	; ENDM2
+	move.w	#-1,$FFFF8A2C.w	; ENDM3
+;	add.w	D2,D3
+	addq.w	#2,D2
+	move.w	D2,$FFFF8A2E.w	; DXI
+	addq.w	#2,D3
+	move.w	D3,$FFFF8A30.w	; DYI
+	move.l	A1,$FFFF8A32.w	; DADDR
+	move.w	D4,$FFFF8A36.w	; WPL
+	move.w	D5,$FFFF8A38.w	; LPB
+	move.w	#$0203,$FFFF8A3A.w	; HOR-LOR
+	move.w	#$C040,$FFFF8A3C.w	; LNR-SKEW
+	
+FRMP_UMOD_CBLT_WAIT:	btst.b	#7,$FFFF8A3C.w
+	BNE	FRMP_UMOD_CBLT_WAIT
+
+	RTS
+
+FRMP_UMOD_CBLT_NAME:	dc.b	" BLITTER : FREE SIZE NTC COPY ",0,0
+
+FRMP_UMOD_CBLT_INFOS:	dc.b	" BLITTER Version by KOSS (c) 1999 ",0
+	dc.b	" 16 bits Near True Color ",0
+	dc.b	" FREE SIZE COPY ",0,0

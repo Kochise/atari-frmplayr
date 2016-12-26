@@ -1,0 +1,34 @@
+ReduceFilter	lsl.w	#3,D0
+	lsl.w	#2,D1
+	lsl.w	#3,D2
+	
+	fmove.w	D0,FP0
+	fmove.w	D1,FP1
+	fmove.w	D2,FP2
+	
+	fmul.x	FP3,FP0
+	fmul.x	FP4,FP1
+	fmul.x	FP5,FP2
+	
+	fadd.x	FP0,FP1
+	fadd.x	FP2,FP1
+	fadd.x	FP6,FP1
+	
+	fmove.w	FP1,D1
+	lsr.w	#3,D1
+	andi.w	#%111111,D1
+	
+	; Niveau de Gris
+	; Grey Level
+	
+	clr.w	D0
+	or.w	D1,D0
+	lsl.w	#1,D1
+	lsl.w	#6,D0
+	or.w	D1,D0
+	lsr.w	#1,D1
+	lsl.w	#5,D0
+	or.w	D1,D0
+	
+	RTS
+

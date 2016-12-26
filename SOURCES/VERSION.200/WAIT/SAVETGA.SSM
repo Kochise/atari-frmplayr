@@ -1,0 +1,165 @@
+; - Sauve l'Ecran Courant en Targa -
+
+	; On cherche la fin du Chemin actuel
+	; Looking for the end of the current Path
+	
+SaveTarga	lea	MovieName,A0
+	move.l	#255,D0
+	
+SavePath_LookFor	move.b	(A0,D0.w),D1
+	cmpi.b	#"\",D1
+	BEQ	SavePath_Found
+	
+	DBF	D0,SavePath_LookFor
+
+	; Pas trouv‚e...
+	; Not found...
+
+	BRA	NextFrame	
+
+	; On regarde s'il reste assez de place pour le Nom du Fichier
+	; Looking for enough place for the File Name
+
+SavePath_Found	cmpi.w	#242,D0
+	BLE	SavePath_Name
+	
+	BRA	NextFrame
+
+	; On cr‚e le Nom du Fichier
+	; Creating File Name
+
+SavePath_Name	move.l	#"\FRM",(A0,D0.w)
+	adda.l	D0,A0
+	addq.l	#4,A0
+	
+	move.w	MovieLenght,D0
+	sub.w	D7,D0
+	move.w	#4,D2
+	
+SavePath_Number	clr.l	D1
+	divu.l	#10,D1:D0
+	add.b	#$30,D1
+	move.b	D1,(A0,D2.w)
+	
+	DBF	D2,SavePath_Number
+	
+	move.l	#".TGA",(5,A0)
+	clr.b	(9,A0)
+	
+	; Cr‚ation du Fichier
+	; Creating File
+	
+	clr.w	-(SP)
+	pea	MovieName
+	move.w	#$3C,-(SP)	; - F_CREATE -
+	trap	#1	; *** GEMDOS ***
+	addq.l	#8,SP
+	
+	tst.l	D0
+	BMI	NextFrame
+	
+	move.w	D0,D5
+	
+	lea	TargaHeader,A0
+	
+	move.w	DisplayMachine,D0
+	BNE	SaveBigScreen
+	
+	move.w	#$B000,(12,A0)	; 176
+	move.w	#$7800,(14,A0)	; 120
+	
+	clr.w	-(SP)
+	move.l	#63360,-(SP)
+	move.w	#$44,-(SP)	; - M_XALLOC -
+	trap	#1	; *** GEMDOS ***
+	addq.l	#8,SP
+	
+	move.l	D0,D4	
+	move.w	#10559,D3
+	
+	BRA	SaveFile_Header
+	
+SaveBigScreen	move.w	#$6001,(12,A0)	; 352
+	move.w	#$F000,(14,A0)	; 240
+
+	clr.w	-(SP)
+	move.l	#253440,-(SP)
+	move.w	#$44,-(SP)	; - M_XALLOC -
+	trap	#1	; *** GEMDOS ***
+	addq.l	#8,SP
+	
+	move.l	D0,D4	
+	move.l	#42239,D3
+
+SaveFile_Header	pea	TargaHeader
+	move.l	#18,-(SP)
+	move.w	D5,-(SP)
+	move.w	#$40,-(SP)	; - F_WRITE -
+	trap	#1	; *** GEMDOS ***
+	lea	(12,SP),SP
+	
+	; Converti l'Image NTC en TC
+	; Converting NTC Image into TC format
+	
+	move.l	ScreenBank+4,A0
+	move.l	D4,A1
+	
+SaveData_Convert	bfextu	(A0){11:5},D1	; BlueA
+	lsl.w	#3,D1
+	move.b	D1,(A1)
+	
+	bfextu	(A0){5:6},D1	; GreenA
+	lsl.w	#2,D1
+	move.b	D1,(1,A1)
+	
+	bfextu	(A0){0:5},D1	; RedA
+	lsl.w	#3,D1
+	move.b	D1,(2,A1)
+
+	bfextu	(A0){27:5},D1	; BlueB
+	lsl.w	#3,D1
+	move.b	D1,(3,A1)
+	
+	bfextu	(A0){21:6},D1	; GreenB
+	lsl.w	#2,D1
+	move.b	D1,(4,A1)
+	
+	bfextu	(A0){16:5},D1	; RedB
+	lsl.w	#3,D1
+	move.b	D1,(5,A1)
+
+	addq.l	#4,A0
+	addq.l	#6,A1
+	
+	DBF	D3,SaveData_Convert
+		
+	; On sauve l'Image
+	; Saving Image
+		
+	move.l	D4,-(SP)
+
+	move.w	DisplayMachine,D0
+	BNE	SaveFile_BigScreen
+	
+	move.l	#63360,-(SP)
+	
+	BRA	SaveFile_Data
+	
+SaveFile_BigScreen	move.l	#253440,-(SP)
+		
+SaveFile_Data	move.w	D5,-(SP)
+	move.w	#$40,-(SP)	; - F_WRITE -
+	trap	#1	; *** GEMDOS ***
+	lea	(12,SP),SP
+
+	move.w	D5,-(SP)
+	move.w	#$3E,-(SP)	; - F_CLOSE -
+	trap	#1	; *** GEMDOS ***
+	addq.l	#4,SP
+
+	move.l	D4,-(SP)
+	move.w	#$49,-(SP)	; - M_FREE -
+	trap	#1	; *** GEMDOS ***
+	addq.l	#6,SP
+
+	BRA	NextFrame

@@ -1,0 +1,160 @@
+Discuss about Colors...
+
+The most three common bitmap formats are :
+
+RGB - Red/Green/Blue
+CMY - Cyan/Magenta/Yellow
+HSB - Hue/Saturation/Brightness
+
+Most of the time, bitmap pictures are displayed in RGB format on screens.
+Most of the time, bitmap pictures are printed in CMY format on papers.
+Most of the time, bitmap pictures are saved in HSB format on floppies.
+
+This part will describe the ways to convert pictures from one format to one
+other :
+                Source Format
+               RGB | CMY | HSB
+     D F-----+-----+-----+-----
+     e o RGB |/////|  1  |  2     The number is the Chapiter number to
+     s r-----+-----+-----+-----   reffer to get full explanations about
+     t m CMY |  3  |/////|  4     the color format conversion method.
+     i a-----+-----+-----+-----
+     n t HSB |  5  |  6  |/////
+
+Chapiter 1 : CMY to RGB conversion
+Chapiter 2 : HSB to RGB conversion
+Chapiter 3 : RGB to CMY conversion
+Chapiter 4 : HSB to CMY conversion
+Chapiter 5 : RGB to HSB conversion
+Chapiter 6 : CMY to HSB conversion
+
+Appendix A : RGB format description
+Appendix B : CYM format description
+Appendix C : HSB format description
+
+
+
+
+
+; - Filtre Luminance -  Brightness
+; Low Value     -      Middle Value     -      High Value
+; 0             25           50         75            100 <- Value Given
+; Black                  Dark Color            Pure Color <- Source Color
+;
+
+
+
+Lum% = (R% * 0.299) + (G% * 0.5786) + (B% * 0.114) + 0%
+
+
+; - Filtre Chrominance - Hue
+; Low Value     -      Middle Value     -      High Value
+; -50          -25           0          25             50 <- Value Given
+; Red  Orange Yellow Green Cyan  Blue Purple Magenta  Red <- Source Color
+;
+
+Chr% = (R% * 0.5) + (G% * -0.4187) + (B% * -0.0813) + 50%
+
+
+; - Filtre Saturation - Saturation
+; Low Value     -      Middle Value     -      High Value
+; -50          -25           0          25             50 <- Value Given
+; White        Light Color    Pastel Color     Pure Color <- Source Color
+
+Sat% = (R% * -0.1687) + (G% * -0.3313) + (B% * 0.5) + 50%
+
+
+
+R% = Lum% + 1.402 * (Chr% - 50%)
+G% = Lum% - 0.34414 * (Sat% - 50%) - 0.71414 * (Chr% - 50%)
+B% = Lum% + 1.772 * (Sat% - 50%)
+
+
+
+
+
+
+
+; You'll see that for Additive     Chroma Synthesis, when WhitePaper selected,
+ the
+;   Image seams to be reversed. White is the Maximum Addition,     you can't
+ Add more
+;   colors...
+; You'll see that for Substractive Chroma Synthesis, when BlackPaper selected,
+ the
+;   Image seams to be reversed. Black is the Maximum Substraction, you can't
+ Sub more
+;   colors...
+; Let see why :
+;
+; Additive Chroma Synthesis                         Substractive Chroma
+ Synthesis
+;
+;         .------.                                               .------.
+; Black  /        \                                     White   /        \
+; here  /   Blue   \                                    Stuff  /  Yellow  \
+;     .-+----..----+-.                                       .-+----..----+-.
+;    /  \ C /  \ M /  \  Black                              /M \ R /  \ G /  \
+;   /    \ / Wh \ /    \  there                            / a  \ / Bk \ /    \
+;   |Green|------|  Red|                                   | g   |------| Cyan|
+;   \      \ Y  /      /                                   \  e   \ B  /      /
+;    \      \  /      /                                     \  nta \  /      /
+;     '------''------'                                       '------''------'
+; There C mean Cyan                                 There R mean Red
+;       Y      Yellow                                     G      Green
+;       M      Magenta                                    B      Blue
+;   and Wh     White                                  and Bk     Black
+;
+; Here, you must Add all the                        Here you must Sub all the
+;   colors (RGB) to GET White                         colors (CYM) to KEEP White
+; No  color -> BLACK                                No  color -> WHITE
+; All color -> WHITE                                All color -> BLACK
+;
+; You can Note that :                               You can Note that :
+;   Cyan    is /Red                                   Red   is /Cyan
+;   Yellow  is /Blue                                  Green is /Magenta
+;   Magenta is /Green                                 Blue  is /Yellow
+;
+; Now what is BlackPaper & WhitePaper Technology :
+;
+; It was done for WYSIWYG Interface. Imagine you want to Filter a Picture onto
+;   your Screen in order to watch only the R,B,G,C,Y or M value.
+;
+;   + BlackPaper +
+;
+; - For RGB, just keep the Chroma Value you want (for G, erase R and B)
+; - For CYM, reverse your Chroma Value you want, copy the Chroma Value get in
+;   the two other, then erase the value you want to watch (for C, reverse R,
+;   copy /R=C in G and B, then erase R. Dont forget that your Screen is based
+;   onto the Additive Chroma Synthesis System. So C on your Screen is G+B)
+;
+; > RGB : JUST ERASE the Chroma Values you want not to keep
+; > CYM : See just above how to do (use NOT, NEVER NEG)
+;         Note that CYM BlackPaper Filter is used for printer. The Chroma Value
+ get
+;         allows you to print the right color level on the paper.
+;
+;   + WhitePaper +
+;
+; Now you want to see what it could show if you put your colors onto a White
+ Paper
+; - For e.g. when R is | Max, you want to get Red
+;                        Min                  White
+;   So reverse R, copy /R in G and B, then FORCE R to the Max...
+;   If R was | Min, /R is Max, then G and B too. R forced to Max, it gives White
+;            | Max,       Min,                                             Red
+; - Easier : For e.g. when C is | Max, you want to get Cyan
+;                               | Min                  White
+;   Or C is /R,  then when C is | Min, R is Max. Just FORCE G and B to Max, it
+ gives White
+;                               | Max       Min
+      Cyan
+;
+; > RGB : - Reverse the Chroma Value you want (JUST NOT IT, not NEG...)
+;         - Copy the reversed Chroma Value in the two others
+;         - Force the Chroma Value you want to Max
+; > CYM : - Put the others Chroma Value to Max
+;         Note that face to the BlackPaper mode, here you can see what you'll
+ get
+;         on the paper once printed.
+

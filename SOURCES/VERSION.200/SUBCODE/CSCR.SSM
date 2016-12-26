@@ -1,0 +1,23 @@
+FRMP_UMOD_CSCR_HEADER:	dc.w	EQU_NATIVE	; Native
+	dc.w	4	; Params Queue Size
+	dc.l	FRMP_UMOD_CSCR_LOAD	; Routine Loader
+	dc.l	FRMP_UMOD_CSCR_START	; Routine Addr
+	dc.l	FRMP_UMOD_CSCR_NAME	; Routine Name
+	dc.l	FRMP_UMOD_CSCR_INFOS	; Routine Infos
+
+FRMP_UMOD_CSCR_LOAD:	move.l	([A6]),A0	; SOURCE ADDR
+
+	RTS
+
+FRMP_UMOD_CSCR_START:	move.w	#((352*240*2)/4)-1,D0
+
+FRMP_UMOD_CSCR_LOOP:	clr.l	(A0)+
+	DBF	D0,FRMP_UMOD_CSCR_LOOP
+
+	RTS
+
+FRMP_UMOD_CSCR_NAME:	dc.b	" 68000 : 352*240 NTC CLEAR ",0,0
+
+FRMP_UMOD_CSCR_INFOS:	dc.b	" MC68000 Version by KOSS (c) 1999 ",0
+	dc.b	" 16 bits Near True Color ",0
+	dc.b	" 352*240 Clear Screen ",0,0

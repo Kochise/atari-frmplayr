@@ -1,0 +1,98 @@
+/// FRAME PLAYER V1.48 - KOSS Production 1999 /////////////////////////////////
+
+HardWare   : ATARI Falcon030 (68030 processor familly)
+             VIDEL Video Processor
+Known Bugs : Two pixels somewhere on the Screen when you type on the Keyboard
+               > I REALLY don't know why !!!
+             VIDEL MAY bug very badly if you have a HardWare VIDEL Booster !!!
+Future     : DSP Interpolation
+File       : TEST    .FRM, just a 1-to-25-counter...
+             ARTE    .FRM, for Color Filters testing...
+             SCAPEFLY.FRM, a stereo-fly made using NeoN (Stereo Patched, but
+               became sudently very bugy, what you can watch on some frame)...
+Use        : Just Drag'n Drop the Movie you want to watch on the Program Icon
+             or Double-Click on it once the Program File installed as
+             Application for FRM Files...
+Features   : BigDos v0.8 Compatibility
+             ARGV P_Exec Extended (support MultiFile Drag'n Drop)
+
+  Hi People, wanna more useless Stuffs ? Just ask me for somes... ;))
+
+  There is FRMPLAYR, just playing (VERY HEAVY) Unpacked Movies with losta
+features like REAL-TIME ZOOM (it slow a 'little' your computer) or, it's true,
+keep alive man, REAL-TIME INTERPOLATION (what slow your ATARI very much, with
+just an INCREDIBLE ratio). But it's just for fun...
+
+  This 'little' piece of 'small' code is ARTE-Ware. Watch them to fell free of
+any charge... Good Code for Good TV, what a GOOD Deal !
+
+  Well, Commands are in the beginning of the Source File FRMPLAY1.SS. But OK,
+here is a copy of them :
+
+Commands are :
+
+[Esc]     == Escape (return to DeskTop)
+[Space]   == Pause/Unpause
+[ClrHome] == Restart the movie
+[<-]      == Previous Frame
+[->]      == Next     Frame
+[UpArrow] == Jump backward 10 Images
+[DwArrow] == Jump forward  10 Images
+[S]       == Save Current SCREEN Into Targa Format
+
+[F1]      == No Filter
+[F2]      == Y Filter (Luminance)
+[F3]      == U Filter (Chrominance)
+[F4]      == V Filter (Saturation)
+[F5]      == R Filter (Red)            \
+[F6]      == G Filter (Green)           > Additive     Chroma Synthesis
+[F7]      == B Filter (Blue)           /
+[F8]      == C Filter (Cyan Filter)    \
+[F9]      == J Filter (Yellow Filter)   > Substractive Chroma Synthesis
+[F10]     == M Filter (Magenta Filter) /
+
+Toggle BlackPaper/WhiterPaper by selecting twice any RGBCJM Filter
+
+Sequence Control Commands are :
+0 NumPad  == Toggle Sequence ON/OFF
+. NumPad  == Save Sequence File
+1 NumPad  == Start SEQ 1
+2 NumPad  == End   SEQ 1
+3 NumPad  == Start SEQ 2
+4 NumPad  == End   SEQ 2
+5 NumPad  == Start SEQ 3
+6 NumPad  == End   SEQ 3
+7 NumPad  == Start SEQ 4
+8 NumPad  == End   SEQ 4
+* NumPad  == Kill All Sequences
+
+When SEQ toggled ON, then jump from Start to End...
+
+( NumPad  == Software Displayer
+) NumPad  == HardWare Displayer
+- NumPad  == Reduce   Display Quality
++ NumPad  == Increase Display Quality
+
+Quality | SoftWare ( NumPad | HardWare ) NumPad | Screen Size
+--------+-------------------+-------------------+-------------
+ - or + | MiniD2D     CPU   | MiniD2D   BLITTER | 176*120*NTC
+        +-------------------+-------------------+-------------
+ NumPad | Window      CPU   | Window    BLITTER | 352*240*NTC
+        +-------------------+-------------------+-------------
+        | Zoom        CPU   | Zoom      BLITTER | 352*240*NTC
+        +-------------------+-------------------+-------------
+        | Interpolate 68000 | Interpolate 68030 | 352*240*NTC
+        '-------------------+-------------------+-------------
+
+Hi to (Random Order) : GuiVol, Martin Osieka, Stabylo (& Seb) of The Removers,
+                       Chris Of AURA, Zerkman Of Trisomic Development, God,
+                       MULLER Beatrice, Praga Khan & the whole of Lords Of
+                       Acid, ATTARD Claude, ROHAUT Seb, CHAMPAGNE Alain,
+                       GARCIA Alain (and his family, of course), Godefroy de
+                       MAPEOU, HECKENDORN Laurent, HIEBEL Joel (for the
+                       Falcon030 Discovering), MEYER Didier, M. KOCH (Mind
+                       Evolutions), CLERC Michel (for the ATARI Discovering),
+                       Tord Jannson (Shower 1.00), Motorola, BLONDEAU Alain
+                       (for the Falcon603 Discovering), and many others...
+
+                                                  Kochise Of STALLION SOFTWARE

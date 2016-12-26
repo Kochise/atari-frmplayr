@@ -1,0 +1,282 @@
+	; Choix du Filtre
+	; Choice of the Filter
+		
+; - Selectionne le Filtre -
+		
+SetFilter	sub.w	#$3B,D2
+	
+	; Si pas Filtre Chromatique, on s'en fout...
+	; If not Chroma Filter, then give up...
+	
+	cmpi.w	#4,D2
+	BLT	UseFilter
+	
+	move.w	DisplayFilter,D0
+	
+	; Si ce n'‚tait pas d‚j… le Filtre, on le change
+	; If it was the same Filter, then change
+	
+	cmp.w	D2,D0
+	BNE	UseFilter
+	
+	; On change la Couleur du Papier (Black/White)
+	; Swapping Paper Color (...)
+	
+	move.w	DisplayPaper,D0
+	not.w	D0
+	move.w	D0,DisplayPaper
+
+	; On s‚lectionne le Filtre demand‚
+	; Set Chosen Filter
+
+UseFilter	move.w	D2,DisplayFilter
+	
+	BRA	DisplayLoop
+		
+; - Pause/Play -
+
+	; Pause. Si Pause active, on d‚sactive
+	; ... If Pause active, then switch OFF
+		
+Pause	tst.w	PauseFlag
+	BNE	Unpause
+	
+	; Sinon on active
+	; Else switch ON
+	
+	move.w	#-1,PauseFlag
+	
+	BRA	NextFrame
+	
+Unpause	clr.w	PauseFlag
+
+	BRA	NextFrame
+		
+	; Diminution de la qualit‚ de l'Affichage
+	; Si d‚j… minimum (0), on ne change rien
+	; Decrease Display Quality
+	; If already Min (0), give up
+	
+
+; - Remonte de 10 Images -
+
+TenBefore	move.w	MovieLenght,D5
+	
+	move.w	D7,D6
+	add.w	#10+1,D6
+	
+	cmp.w	D5,D6
+	BLE	AfterStart
+	
+	; On se retrouve avant le d‚but de l'Animation
+	
+	sub.w	D5,D6
+	move.w	D6,D7
+	subq.w	#1,D7
+			
+	; D‚but des 10 Images pr‚c‚dentes
+	; Start of the 10 previous Images
+		
+	clr.l	D0
+	move.w	D6,D0
+	mulu.l	#-42240,D0
+		
+	move.w	#2,-(SP)
+	move.w	MovieHandle,-(SP)
+	move.l	D0,-(SP)
+	move.w	#$42,-(SP)	; - F_SEEK -
+	trap	#1	; *** GEMDOS ***
+	lea	(10,SP),SP
+		
+	BRA	ReadLoop
+
+	; On peut remonter de 10 Images sans se trouver
+	; avant le d‚but de l'Animation
+
+AfterStart	move.w	#1,-(SP)
+	move.w	MovieHandle,-(SP)
+	move.l	#-464640,-(SP)
+	move.w	#$42,-(SP)	; - F_SEEK -
+	trap	#1	; *** GEMDOS ***
+	lea	(10,SP),SP
+	
+	add.w	#10,D7
+	
+	BRA	ReadLoop
+
+; - Baisse en Qualit‚ -
+		
+Smaller	move.w	DisplayMachine,D0
+	BEQ	NextFrame
+	
+	pea	DisplayLoop
+	
+	; On baisse en qualit‚
+	; Decreasing Quality
+	
+	subq.w	#1,D0
+	move.w	D0,DisplayMachine
+	
+	; Si MINID2D ou WINDOW, on efface les Ecrans pour une Bordure noire
+	; If ...              , clearing Screens to get a Black border
+	
+	cmpi.w	#1,D0
+	BLE	Clear_Screen	; -> Clear_Screen -> DisplayLoop
+	
+	RTS
+
+; - Image Pr‚c‚dente -
+		
+	; Image pr‚c‚dente
+	; Previous Image
+		
+Previous	move.w	MovieLenght,D0
+	subq.w	#1,D0
+	
+	cmp.w	D0,D7
+	BEQ	FirstFrame	; 0 -> DerniŠre
+	BLT	LastFrame	; Image pr‚c‚dente
+	BGT	ErrorFrame	; ???
+	
+	BRA	NextFrame
+	
+; - Augmente en Qualit‚ -
+	
+	; Augmentation de la qualit‚ de l'Affichage
+	; Si maximum (3), on ne change rien
+	; Increase Display Quality
+	; If Max (3), give up
+	
+Taller	move.w	DisplayMachine,D0
+	cmpi.w	#3,D0
+	BGE	NextFrame
+	
+	pea	DisplayLoop
+	
+	; On augmente en qualit‚
+	; Increasing Quality
+	
+	addq.w	#1,D0
+	move.w	D0,DisplayMachine
+	
+	; Si MINID2D ou WINDOW, on efface les Ecrans pour une Bordure noire
+	; If ...              , clearing Screens to get a Black border
+	
+	cmpi.w	#1,D0
+	BLE	Clear_Screen	; -> Clear_Screen -> DisplayLoop
+	
+	RTS
+	
+; - Descend de 10 Images -
+
+TenAfter	cmpi.w	#9,D7
+	BLE	FromStart
+	
+	move.w	#1,-(SP)
+	move.w	MovieHandle,-(SP)
+	move.l	#380160,-(SP)
+	move.w	#$42,-(SP)	; - F_SEEK -
+	trap	#1	; *** GEMDOS ***
+	lea	(10,SP),SP
+	
+	sub.w	#10,D7
+		
+	BRA	ReadLoop
+	
+	; S'il reste 10 Images ou moins … lire
+	; If there still 10 Images or less to read
+	
+FromStart	move.w	MovieLenght,D1
+	subq.w	#1,D1
+
+	move.l	#9,D0
+	sub.w	D7,D0
+	sub.w	D0,D1
+	move.w	D1,D7
+	mulu.l	#42240,D0
+		
+	clr.w	-(SP)
+	move.w	MovieHandle,-(SP)
+	move.l	D0,-(SP)
+	move.w	#$42,-(SP)	; - F_SEEK -
+	trap	#1	; *** GEMDOS ***
+	lea	(10,SP),SP
+
+	BRA	ReadLoop
+	
+; - Positionne sur la derniŠre Image -
+	
+	; DerniŠre Image de l'Animation
+	; Last Image of the Movie
+	
+FirstFrame	clr.w	D7
+
+	; D‚but de la derniŠre Image
+	; Start of the last Image
+		
+	move.w	#2,-(SP)
+	move.w	MovieHandle,-(SP)
+	move.l	#-42240,-(SP)
+	move.w	#$42,-(SP)	; - F_SEEK -
+	trap	#1	; *** GEMDOS ***
+	lea	(10,SP),SP
+	
+	BRA	ReadLoop
+
+; - Positionne sur l'Image Pr‚c‚dente -
+
+	; Image pr‚c‚dente. Modification du Compteur
+	; Previous Image. Updating counter
+
+LastFrame	addq.w	#1,D7
+
+	; L'Image actuelle a ‚t‚ lue, il faut revenir de 2 Images
+	; Previous Image was read, must return back of 2 Images
+
+	move.w	#1,-(SP)
+	move.w	MovieHandle,-(SP)
+	move.l	#-42240*2,-(SP)
+	move.w	#$42,-(SP)	; - F_SEEK -
+	trap	#1	; *** GEMDOS ***
+	lea	(10,SP),SP
+	
+	BRA	ReadLoop
+	
+; - Si Erreur ... -
+
+	; Au cas o—...
+	; In case of...
+	
+ErrorFrame	move.w	D0,D7
+
+	BRA	NextFrame
+	
+; - Utilisation de la Version Software -
+
+	; Version Software ou 68000.
+	; Software Version or 68000.
+	
+SoftVersion	move.w	DisplayVersion,D0
+	BEQ	NextFrame
+	
+	; Version Software
+	; Software Version
+	
+	clr.w	DisplayVersion
+	
+	BRA	DisplayLoop
+
+; - Utilisation de la Version Hardware -
+
+	; Version Hardware ou 68030.
+	; Hardware Version or 68030.
+
+HardVersion	move.w	DisplayVersion,D0
+	BNE	NextFrame
+	
+	; Version Hardware
+	; Hardware Version
+	
+	move.w	#1,DisplayVersion
+	
+	BRA	DisplayLoop

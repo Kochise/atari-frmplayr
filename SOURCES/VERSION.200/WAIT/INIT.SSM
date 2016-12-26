@@ -1,0 +1,212 @@
+; --- Mise en Place du Programme ---
+
+	move.l	(4,SP),A6	; Adresse de la BASEPAGE
+	lea	(128,A6),A6	; Adresse de la COMMAND-TAIL
+	lea	MovieName,A5
+	move.b	(A6)+,D6	; Taille de la COMMAND-TAIL (ATTENTION : Format PASCAL)
+	
+	BEQ	P_Term	; Pas de COMMAND-TAIL, on n'a plus rien … faire
+
+	; Pour Info, lors d'un Drag'n Drop, vous avez :
+	; - Dans la CommandLine  : Le Nom du Fichier
+	; - En Chemin par d‚faut : Le Chemin du Fichier
+	; Il sagit donc de reconstruire le Chemin complet
+	; dans un Buffer
+	; For Info, during a Drag'n Drop, you have :
+	; - Into the CommandLine : the File's Name
+	; - As DefaultPath       : the File's Path
+	; Then you must build the complete Path into a Buffer
+	;
+	; For D:\LIB'ZONE.III\FRMPLAYR\ARTE.FRM, you've :
+	; CommandLine : 8,"ARTE.FRM"
+	; DefaultUnit : 3 (D)
+	; DefaultPath : "\LIB'ZONE.III\FRMPLAYR"
+
+	; On cr‚er le Chemin du Fichier
+	; Creating File's Path
+	
+	move.w	#$19,-(SP)	; - D_GETDRV -
+ 	trap	#1	; *** GEMDOS ***
+ 	addq.l	#2,SP
+
+	; BigDos v0.8 Compatibity (c) KOSS 1999
+	;  0..25 : A..Z
+	; 26..31 : 1..6
+ 	
+ 	cmpi.w	#26,D0
+ 	BGE	BigDos_Compatibility
+ 	
+ 	add.w	#65,D0	; A..Z
+ 	
+ 	BRA	Drive_Name
+ 	
+BigDos_Compatibility	add.w	#48-26,D0	; 1..6
+ 	
+Drive_Name 	move.b	D0,(A5)+
+ 	move.b	#":",(A5)+
+ 	
+ 	clr.w	-(SP)
+ 	move.l	A5,-(SP)
+ 	move.w	#$47,-(SP)	; - D_GETPATH -
+ 	trap	#1	; *** GEMDOS ***
+ 	addq.l	#8,SP
+
+	; On cherche la fin du Chemin
+	; Looking for the End of the Path
+
+Look_EndPath	move.b	(A5)+,D0
+	BNE	Look_EndPath
+
+	move.b	#"\",(-1,A5)
+
+	subq.w	#1,D6
+
+	; On copie le Nom du Fichier
+	; Copying File's Name
+
+Copy_FRM_Name	move.b	(A6)+,(A5)+	; Copie de la COMMAND-TAIL
+	
+	DBF	D6,Copy_FRM_Name
+	
+	clr.b	(A5)	; Mets un OCTET nul … la fin de la chaine (ATTENTION : Transformation au format C)
+	move.l	-(A5),D0	; Les derniŠres lettres (.FRM en principe)
+	cmpi.l	#".FRM",D0	; On v‚rifie … tout hasard
+	BEQ	ProgStart
+	cmpi.l	#".FSF",D0
+	BEQ	ProgStart
+	
+	BRA	P_Term	; A la prochaine...
+
+	; Initialisation de la M‚moire
+	; Memory Init
+
+ProgStart	movea.l	(4,SP),A6	; Adresse de la BASEPAGE
+	move.l	($C,A6),D0	; Taille du SEGMENT TEXT
+	add.l	($14,A6),D0	; Additionne la taille du SEGMENT DATA … D0
+	add.l	($1C,A6),D0	; Additionne la taille du SEGMENT BSS … D0
+	addi.l	#$100,D0	; Additionne la taille de la BASEPAGE … D0
+	addi.l	#$400,D0	; Additionne la taille de la future PILE (Ici, 256 positions longues (1024 OCTETS))
+	move.l	D0,D1	; Copie D0 dans D1 (Taille … r‚server)
+	move.l	D0,D7	; Pour un hypoth‚tique P_TERMRES
+	add.l	A6,D1	; Additionne l'adresse du d‚but du programme avec D1 (La taille … r‚server)
+	andi.l	#-2,D1	; Rend D1 pair (Au cas o— il ne l'‚tait pas)
+	subq.l	#8,D1	; Garde de la place pour l'adresse de la BASEPAGE
+	move.l	(4,SP),D2	; Sauvegarde l'adresse de la BASEPAGE
+	movea.l	D1,SP	; Installe l'adresse de fin du programme+place nouvelle PILE dans la PILE
+	move.l	D2,(4,SP)	; R‚installe l'adresse de la BASEPAGE
+	move.l	D0,-(SP)	; EmPILE la taille … r‚server
+	move.l	A6,-(SP)	; EmPILE l'adresse du programme
+	clr.w	-(SP)	; R‚serv‚
+	move.w	#$4A,-(SP)	; - M_SHRINK -
+	trap	#1	; *** GEMDOS ***
+	lea	(12,SP),SP
+
+	tst.w	D0
+	BMI	P_Term
+
+; *****************************************************************************	
+
+; --- Initialisation du Programme ---
+
+	; On coupe la souris
+	; ATTENTION : Sous Ecran Virtuel, plus de posibilit‚s de 
+	;             bouger la Fenˆtre d'Affichage
+	; Cuting the Mouse
+	; WARNING : Under Virtual Screen, you cannot move
+	;           the Display Window anymore
+	; You can also use the - INITMOUSE - function (XBIOS 0)
+	
+	move.w	#18,-(SP)
+	move.w	#4,-(SP)
+	move.w	#3,-(SP)	; - BCONOUT -
+	trap	#13	; *** BIOS ***
+	addq.l	#6,SP
+
+	; On ouvre le Fichier d'Animation
+	; Opening the Movie File
+
+	clr.w	-(SP)
+	pea	MovieName
+	move.w	#$3D,-(SP)	; - F_OPEN -
+	trap	#1	; *** GEMDOS ***
+	addq.l	#8,SP
+	
+	move.w	D0,MovieHandle
+	
+	; On se place … la fin pour en connaitre la Taille
+	; Going to its end in order to know its Size
+	
+	move.w	#2,-(SP)
+	move.w	D0,-(SP)
+	clr.l	-(SP)
+	move.w	#$42,-(SP)	; - F_SEEK -
+	trap	#1	; *** GEMDOS ***
+	lea	(10,SP),SP
+	
+	; divu.l works like this :
+	; D0 is the Quotient
+	; D1 is the Rest
+	;
+	; D0.l <- Int [(D0+D1)/Value] (here Value == #Immediate)
+	; D1.l <- Int [(Frac [(D0+D1)/Value])*Value ]
+	
+	clr.l	D1	; No Rest
+	divu.l	#42240,D1:D0
+	
+	tst.l	D1
+	BNE	Exit
+	
+	move.w	D0,MovieLenght
+
+	; Ecran Physique du GEM
+	; Physical Screen of GEM
+
+	move.w	#2,-(SP)	; - PHYSBASE -
+	trap	#14	; *** XBIOS ***
+	addq.l	#2,SP
+	
+	move.l	D0,GEMPhysic
+
+	; Ecran Logique du GEM
+	; Logical Screen of GEM
+
+	move.w	#3,-(SP)	; - LOGBASE -
+	trap	#14	; *** XBIOS ***
+	addq.l	#2,SP
+	
+	move.l	D0,GEMLogic
+	
+	; On r‚serve l'Ecran Logique
+	; Allocating the Logical Screen
+	
+	clr.w	-(SP)
+	move.l	#168960,-(SP)
+	move.w	#$44,-(SP)	; - M_XALLOC -
+	trap	#1	; *** GEMDOS ***
+	addq.l	#8,SP
+	
+	move.l	D0,ScreenBank
+
+	; On r‚serve l'Ecran Physique
+	; Allocating the Physical Screen
+
+	clr.w	-(SP)
+	move.l	#168960,-(SP)
+	move.w	#$44,-(SP)	; - M_XALLOC -
+	trap	#1	; *** GEMDOS ***
+	addq.l	#8,SP
+	
+	move.l	D0,ScreenBank+4
+		
+	; On efface les Ecrans
+	; Clearing the Screens
+		
+	BSR	Clear_Screen
+
+	; On initialise quelques Variables
+	; Init. some 
+
+	move.w	#1,DisplayMachine
+	clr.w	DisplayVersion
+	clr.w	DisplayFilter
+	clr.w	DisplayPaper

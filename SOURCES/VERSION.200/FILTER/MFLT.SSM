@@ -1,0 +1,33 @@
+; - Filtre Magenta -
+
+MAGENTA_FILTER	lea	ScreenBuffer,A0
+	lea	ScreenFilter,A1
+		
+	move.w	#21120-1,D3
+	
+	move.w	DisplayPaper,D0
+	BNE	ReduceWhiteMagenta
+
+ReduceBlackMagenta	move.w	(A0)+,D0
+
+	not.w	D0	; On cr‚e M par /V
+	andi.w	#%11111000000,D0
+	lsr.w	#6,D0
+	clr.w	D1
+	or.w	D0,D1	; On place M en R
+	ror.w	#5,D1
+	or.w	D0,D1	; On place M en B
+
+	move.w	D1,(A1)+
+	
+	DBF	D3,ReduceBlackMagenta
+
+	RTS
+	
+ReduceWhiteMagenta	move.w	(A0)+,D0
+	ori.w	#%1111100000011111,D0	; On force R et B au Max
+	move.w	D0,(A1)+
+	
+	DBF	D3,ReduceWhiteMagenta
+	
+	RTS

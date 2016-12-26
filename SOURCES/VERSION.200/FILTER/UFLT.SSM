@@ -1,0 +1,24 @@
+; - Filtre Chrominance -
+; Low Value     -      Middle Value     -      High Value
+; 0             63          127        191            255 <- Value Given
+; Red  Orange Yellow Green Cyan  Blue Purple Magenta  Red <- Source Color
+;
+
+U_FILTER	lea	ScreenBuffer,A0
+	lea	ScreenFilter,A1
+		
+	move.w	#10560-1,D3
+	
+	; Idem
+	;    0.5    =  %0000000000000000.1000000000000000
+	; -  0.4187 = /%1111111111111111.1001010011010000
+	; -  0.0813 = /%1111111111111111.1110101100101111
+	;  128      =  %0000000010000000.0000000000000000
+	
+	fmove.x	#0.5,FP3
+	fmove.x	#-0.4187,FP4
+	fmove.x	#-0.0813,FP5
+	fmove.x	#128,FP6
+	
+	BRA	ChromaFilter
+

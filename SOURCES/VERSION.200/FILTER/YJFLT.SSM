@@ -1,0 +1,35 @@
+; - Filtre Jaune -
+
+YELLOW_FILTER	lea	ScreenBuffer,A0
+	lea	ScreenFilter,A1
+		
+	move.w	#21120-1,D3
+
+	move.w	DisplayPaper,D0
+	BNE	ReduceWhiteYellow
+
+ReduceBlackYellow	move.w	(A0)+,D0
+
+	not.w	D0	; On cr‚e J par /B
+	andi.w	#%11111,D0
+	clr.w	D1
+	or.w	D0,D1	; On place J en R
+	lsl.w	#5,D1
+	or.w	D0,D1	; On place J en V
+	lsl.w	#6,D1
+
+	move.w	D1,(A1)+
+	
+	DBF	D3,ReduceBlackYellow
+
+	RTS
+
+ReduceWhiteYellow	move.w	(A0)+,D0
+
+	ori.w	#%1111111111100000,D0	; On force R et V au Max
+
+	move.w	D0,(A1)+
+	
+	DBF	D3,ReduceWhiteYellow
+	
+	RTS

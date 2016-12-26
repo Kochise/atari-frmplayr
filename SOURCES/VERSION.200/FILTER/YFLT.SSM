@@ -1,0 +1,23 @@
+; - Filtre Luminance -
+; Low Value     -      Middle Value     -      High Value
+; 0             63          127        191            255 <- Value Given
+; Black                  Dark Color            Pure Color <- Source Color
+;
+
+Y_FILTER	lea	ScreenBuffer,A0
+	lea	ScreenFilter,A1
+		
+	move.w	#10560-1,D3
+	
+	; Pour une utilisation en Virgule Fixe
+	; For a Fixed Point use
+	;    0.299  =  %0000000000000000.0100110010001011
+	;    0.5786 =  %0000000000000000.1001010000111110
+	;    0.114  =  %0000000000000000.0001110100101111
+	
+	fmove.x	#0.299,FP3
+	fmove.x	#0.5786,FP4
+	fmove.x	#0.114,FP5
+	fmove.x	#0,FP6	; !
+	
+	BRA	ChromaFilter

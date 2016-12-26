@@ -1,0 +1,29 @@
+; - Filtre Rouge -
+
+RED_FILTER	lea	ScreenBuffer,A0
+	lea	ScreenFilter,A1
+		
+	move.w	#21120-1,D3
+	move.w	#%1111100000000000,D2	; On ne garde que R
+	
+	move.w	DisplayPaper,D0
+	BNE	ReduceWhiteRed
+
+	BRA	BlackRGB_Filter
+	
+ReduceWhiteRed	move.w	(A0)+,D1
+
+	not.w	D1	; On inverse R
+	andi.w	#%1111100000000000,D1
+	rol.w	#5,D1
+	clr.w	D0
+	or.w	D1,D0	; On place /R en V
+	lsl.w	#6,D0
+	or.w	D1,D0	; On place /R en B
+	ori.w	#%1111100000000000,D0	; On force R au Max
+
+	move.w	D0,(A1)+
+	
+	DBF	D3,ReduceWhiteRed
+	
+	RTS

@@ -1,0 +1,46 @@
+FRMP_UMOD_CCPU_HEADER:	dc.w	EQU_NATIVE	; Native
+	dc.w	4+2+2+2+4+2+2+2+2+2	; Params Queue Size
+	dc.l	FRMP_UMOD_CCPU_LOAD	; Routine Loader
+	dc.l	FRMP_UMOD_CCPU_START	; Routine Addr
+	dc.l	FRMP_UMOD_CCPU_NAME	; Routine Name
+	dc.l	FRMP_UMOD_CCPU_INFOS	; Routine Infos
+
+FRMP_UMOD_CCPU_LOAD:	move.l	([A6]),A0	; SOURCE ADDR
+	move.w	(4,A6),D0	; SOURCE START OFFSET
+	lea	(A0,D0.w),A0
+	move.w	(6,A6),D0	; SOURCE PIXEL OFFSET
+	move.w	(8,A6),D1	; SOURCE LINE OFFSET
+	move.l	([10,A6]),A1	; DEST ADDR
+	move.w	(14,A6),D2	; DEST START OFFSET
+	lea	(A1,D2.w),A1
+	move.w	(16,A6),D2	; DEST PIXEL OFFSET
+	move.w	(18,A6),D3	; DEST LINE OFFSET
+	move.w	(20,A6),D4	; BLOCK WIDTH
+	move.w	(22,A6),D5	; BLOCK HEIGHT
+	
+	RTS
+
+FRMP_UMOD_CCPU_START:	subq.w	#1,D4
+	subq.w	#1,D5
+	
+FRMP_UMOD_CCPU_YLOOP:	move.w	D4,D6
+
+FRMP_UMOD_CCPU_XLOOP:	move.w	(A0)+,(A1)+
+
+	lea	(A0,D0.w),A0
+	lea	(A1,D2.w),A1
+	
+	DBF	D6,FRMP_UMOD_CCPU_XLOOP
+	
+	lea	(A0,D1.w),A0
+	lea	(A1,D3.w),A1
+
+	DBF	D5,FRMP_UMOD_CCPU_YLOOP
+
+	RTS
+
+FRMP_UMOD_CCPU_NAME:	dc.b	" 68000 : FREE SIZE NTC COPY ",0,0
+
+FRMP_UMOD_CCPU_INFOS:	dc.b	" MC68000 Version by KOSS (c) 1999 ",0
+	dc.b	" 16 bits Near True Color ",0
+	dc.b	" FREE SIZE COPY ",0,0

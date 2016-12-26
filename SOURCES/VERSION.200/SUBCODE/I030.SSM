@@ -1,0 +1,207 @@
+FRMP_UMOD_I030_HEADER:	dc.w	EQU_NATIVE	; Native
+	dc.w	4+4	; Params Queue Size
+	dc.l	FRMP_UMOD_I030_LOAD	; Routine Loader
+	dc.l	FRMP_UMOD_I030_START	; Routine Addr
+	dc.l	FRMP_UMOD_I030_NAME	; Routine Name
+	dc.l	FRMP_UMOD_I030_INFOS	; Routine Infos
+
+FRMP_UMOD_I030_LOAD:	move.l	([A6]),A0	; SOURCE ADDR
+	move.l	([4,A6]),A1	; DEST ADDR
+	
+	RTS
+
+FRMP_UMOD_I030_START:	move.w	#120-2,D6	; -1
+
+FRMP_UMOD_I030_SYL:	swap	D6
+	move.w	#176-2,D6	; -1
+	
+FRMP_UMOD_I030_SXL:	; Interpolation 
+	; A 1 B
+	; 2 3
+	; C   D
+	;
+
+	; A 1 B
+
+	clr.w	D0
+	
+	bfextu	(A0){0:5},D1	; RedA
+	bfextu	(A0){16:5},D2	; RedB
+	add.w	D2,D1
+	move.l	D1,D3	; Final Red
+	lsr.w	#1,D1
+	or.w	D1,D0
+	lsl.w	#6,D0
+
+	bfextu	(A0){5:6},D1	; GreenA
+	bfextu	(A0){21:6},D2	; GreenB
+	add.w	D2,D1
+	move.l	D1,D4	; Final Green
+	lsr.w	#1,D1
+	or.w	D1,D0
+	lsl.w	#5,D0
+	
+	bfextu	(A0){11:5},D1	; BlueA
+	bfextu	(A0){27:5},D2	; BlueB
+	add.w	D2,D1
+	move.l	D1,D5	; Final Blue
+	lsr.w	#1,D1
+	or.w	D1,D0
+	
+	move.w	(A0),(A1)	; A
+	move.w	D0,(2,A1)	; 1
+	
+	; A 
+	; 2
+	; C
+	
+	clr.w	D0
+	
+	bfextu	(A0){0:5},D1	; RedA
+	bfextu	(352,A0){0:5},D2	; RedC
+	add.w	D2,D1
+	add.w	D2,D3	; Final Red
+	lsr.w	#1,D1
+	or.w	D1,D0
+	lsl.w	#6,D0
+
+	bfextu	(A0){5:6},D1	; GreenA
+	bfextu	(352,A0){5:6},D2	; GreenC
+	add.w	D2,D1
+	add.w	D2,D4	; Final Green
+	lsr.w	#1,D1
+	or.w	D1,D0
+	lsl.w	#5,D0
+	
+	bfextu	(A0){11:5},D1	; BlueA
+	bfextu	(352,A0){11:5},D2	; BlueC
+	add.w	D2,D1
+	add.w	D2,D5	; Final Blue
+	lsr.w	#1,D1
+	or.w	D1,D0
+	
+	move.w	D0,(704,A1)	; 2
+
+	; A  B
+	;  3
+	; C  D
+
+	clr.w	D0
+	
+	bfextu	(352,A0){16:5},D2	; RedD
+	add.w	D2,D3	; Final Red
+	lsr.w	#2,D3
+	or.w	D3,D0
+	lsl.w	#6,D0
+
+	bfextu	(352,A0){21:6},D2	; GreenD
+	add.w	D2,D4	; Final Green
+	lsr.w	#2,D4
+	or.w	D4,D0
+	lsl.w	#5,D0
+	
+	bfextu	(352,A0){27:5},D2	; BlueD
+	add.w	D2,D5	; Final Blue
+	lsr.w	#2,D5
+	or.w	D5,D0
+
+	move.w	D0,(706,A1)	; 3
+
+	addq.l	#2,A0
+	addq.l	#4,A1
+
+	DBF	D6,FRMP_UMOD_I030_SXL
+	
+	; Interpolation
+	; A 0
+	; 2 0
+	; C
+	
+	clr.w	D0
+	
+	bfextu	(A0){0:5},D1	; RedA
+	bfextu	(352,A0){0:5},D2	; RedC
+	add.w	D2,D1
+	lsr.w	#1,D1
+	or.w	D1,D0
+	lsl.w	#6,D0
+
+	bfextu	(A0){5:6},D1	; GreenA
+	bfextu	(352,A0){5:6},D2	; GreenC
+	add.w	D2,D1
+	lsr.w	#1,D1
+	or.w	D1,D0
+	lsl.w	#5,D0
+	
+	bfextu	(A0){11:5},D1	; BlueA
+	bfextu	(A0+352){11:5},D2	; BlueC
+	add.w	D2,D1
+	lsr.w	#1,D1
+	or.w	D1,D0
+			
+	move.w	(A0)+,(A1)
+	clr.w	(2,A1)
+	move.w	D0,(704,A1)	; 2
+	clr.w	(706,A1)	
+	
+	adda.l	#708,A1
+	
+	swap	D6
+	DBF	D6,FRMP_UMOD_I030_SYL
+	
+	move.w	#176-2,D6	; -1
+	
+FRMP_UMOD_I030_SLL:	; Interpolation
+	; A 1 B
+	; 0 0
+	;
+	
+	clr.w	D0
+	
+	bfextu	(A0){0:5},D1	; RedA
+	bfextu	(A0){16:5},D2	; RedB
+	add.w	D2,D1
+	lsr.w	#1,D1
+	or.w	D1,D0
+	lsl.w	#6,D0
+
+	bfextu	(A0){5:6},D1	; GreenA
+	bfextu	(A0){21:6},D2	; GreenB
+	add.w	D2,D1
+	lsr.w	#1,D1
+	or.w	D1,D0
+	lsl.w	#5,D0
+	
+	bfextu	(A0){11:5},D1	; BlueA
+	bfextu	(A0){27:5},D2	; BlueB
+	add.w	D2,D1
+	lsr.w	#1,D1
+	or.w	D1,D0
+	
+	move.w	(A0)+,(A1)
+	move.w	D0,(2,A1)
+	clr.w	(704,A1)
+	clr.w	(706,A1)
+
+	addq.l	#4,A1
+
+	DBF	D6,FRMP_UMOD_I030_SLL
+	
+	; Copie
+	; A 0
+	; 0 0
+	;
+	
+	move.w	(A0),(A1)
+	clr.w	(2,A1)
+	clr.w	(704,A1)
+	clr.w	(706,A1)
+
+	RTS
+	
+FRMP_UMOD_I030_NAME:	dc.b	" 68030 : 176*120 > 352*240 NTC INTERPOLATE ",0,0
+
+FRMP_UMOD_I030_INFOS:	dc.b	" MC68030 Version by KOSS (c) 1999 ",0
+	dc.b	" 16 bits Near True Color ",0
+	dc.b	" 176*120 -> 352*240 ",0
+	dc.b	" Linear Interpolation System ",0,0

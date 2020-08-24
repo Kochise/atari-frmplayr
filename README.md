@@ -2,6 +2,8 @@
 
 Atari Falcon030 program to play direct-to-disk movies
 
+![frmplayr](https://raw.githubusercontent.com/Kochise/frmplayr/master/FRM00001.png)
+
 * Hardware and software needed
 
 You need the following to get this program working :
